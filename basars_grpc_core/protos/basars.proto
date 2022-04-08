@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package basars;
+
+service BasarsServing {
+  rpc provide(EndoscopicImageInput) returns (PolypImageSlices);
+}
+
+message EndoscopicImageInput {
+  bytes image = 1;
+}
+
+message PolypImageSlices {
+  repeated bytes slices = 1;
+}
