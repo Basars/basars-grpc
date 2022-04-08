@@ -1,4 +1,5 @@
 import os
+import logging
 
 import grpc
 
@@ -9,6 +10,9 @@ from basars_grpc_server.utils import grpc_postprocess, grpc_preprocess
 from basars_grpc_core.protos.basars_pb2_grpc import BasarsServingServicer
 from basars_grpc_core.protos.basars_pb2_grpc import add_BasarsServingServicer_to_server as add_service_to_server
 from basars_grpc_core.protos.basars_pb2 import EndoscopicImageInput, PolypImageSlices
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 class BasarsService(BasarsServingServicer):
@@ -23,15 +27,15 @@ class BasarsService(BasarsServingServicer):
             context.set_details('Input image must be shape=(224, 224, 3) or (150528,)')
             return PolypImageSlices()
         pixels = pixels / 255.
-        print('Performing endoscopic image analysis...')
+        logging.info('Performing endoscopic image analysis...')
         outputs = self.model.predict(pixels)[0]
         slices = [grpc_postprocess(outputs[:, :, axis]) for axis in range(outputs.shape[-1])]
-        print('Returning sliced result...')
+        logging.info('Returning sliced result...')
         return PolypImageSlices(slices=slices)
 
 
 def serve():
-    print('Loading Vision Transformer...')
+    logging.info('Loading Vision Transformer...')
     model = create_stairs_vision_transformer()
     service = BasarsService(model)
 
@@ -40,13 +44,13 @@ def serve():
     grpc_workers = os.getenv('BASARS_POOL_WORKERS', 10)
     grpc_workers = int(grpc_workers)
 
-    print('Setting gRPC server up...')
+    logging.info('Setting gRPC server up...')
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=grpc_workers))
     add_service_to_server(service, server)
 
     server.add_insecure_port('{}:{}'.format(grpc_host, grpc_port))
     server.start()
-    print('The gRPC server is listening on {}:{}'.format(grpc_host, grpc_port))
+    logging.info('The gRPC server is listening on {}:{}'.format(grpc_host, grpc_port))
 
     server.wait_for_termination()
 

@@ -1,4 +1,5 @@
 import os
+import logging
 import requests
 import progressbar
 
@@ -11,6 +12,7 @@ from transunet import VisionTransformer
 PRETRAINED_MODEL_DIR = 'models'
 
 bar = None
+logging.basicConfig(level=logging.INFO)
 
 
 def show_progress(block_num, block_size, total_size):
@@ -28,12 +30,12 @@ def show_progress(block_num, block_size, total_size):
 
 
 def download_file(filename, url, error):
-    print('Downloading {} to {}'.format(url, filename))
+    logging.info('Downloading {} to {}'.format(url, filename))
     try:
         request.urlretrieve(url, filename, show_progress)
     except:
         os.unlink(filename)
-        print('ERROR: {}'.format(error))
+        logging.info('ERROR: {}'.format(error))
 
 
 def attempt_to_download(filename, repo='Basars/models'):

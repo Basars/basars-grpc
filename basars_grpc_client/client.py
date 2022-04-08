@@ -1,6 +1,7 @@
 import os
 import grpc
 import cv2
+import logging
 
 import numpy as np
 
@@ -8,6 +9,9 @@ from basars_grpc_core.protos.basars_pb2_grpc import BasarsServingStub
 from basars_grpc_core.protos.basars_pb2 import EndoscopicImageInput
 from basars_grpc_server.utils import grpc_postprocess, grpc_preprocess
 from basars_grpc_client.postprocessing import save_as_readable_image
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 def load_image(filepath):
@@ -24,18 +28,18 @@ def run():
     source_images_dir = os.getenv('BASARS_IMAGE_SOURCE_DIR', 'sample_images')
     target_images_dir = os.getenv('BASARS_IMAGE_TARGET_DIR', 'target_images')
 
-    print('Joining in to the gRPC server')
+    logging.info('Joining in to the gRPC server')
     channel = grpc.insecure_channel('{}:{}'.format(grpc_host, grpc_port))
     stub = BasarsServingStub(channel)
-    print('Successfully connected to the gRPC server: {}/{}'.format(grpc_host, grpc_port))
+    logging.info('Successfully connected to the gRPC server: {}:{}'.format(grpc_host, grpc_port))
 
     for filename in os.listdir(source_images_dir):
         filepath = os.path.join(source_images_dir, filename)
-        print('Committing image to gRPC server: {}'.format(filepath))
+        logging.info('Committing image to gRPC server: {}'.format(filepath))
         sample_img = load_image(filepath)
         img = grpc_postprocess(sample_img)
         response = stub.provide(EndoscopicImageInput(image=img))
-        print('Responded from server: {}'.format(filepath))
+        logging.info('Responded from server: {}'.format(filepath))
 
         phase_images = []
         for buffer in response.slices:
@@ -48,7 +52,7 @@ def run():
 
         dst_filepath = '{}/analysis_{}.jpg'.format(target_images_dir, name_only)
         save_as_readable_image(sample_img, phase_images, dst_filepath)
-        print('The readable image have been saved at: {}'.format(dst_filepath))
+        logging.info('The readable image have been saved at: {}'.format(dst_filepath))
 
 
 if __name__ == '__main__':
